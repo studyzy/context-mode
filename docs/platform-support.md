@@ -4,11 +4,11 @@ This document provides a comprehensive comparison of all platforms supported by 
 
 ## Overview
 
-context-mode supports fifteen platforms across three hook paradigms:
+context-mode supports sixteen platforms across three hook paradigms:
 
 | Paradigm | Platforms |
 |----------|-----------|
-| **JSON stdin/stdout** | Claude Code, Gemini CLI, VS Code Copilot, JetBrains Copilot, Cursor, Codex CLI, Qwen Code |
+| **JSON stdin/stdout** | Claude Code, Gemini CLI, VS Code Copilot, JetBrains Copilot, Cursor, Codex CLI, Qwen Code, CodeBuddy |
 | **TS Plugin** | OpenCode, KiloCode, OpenClaw |
 | **MCP-only** | Antigravity, Kiro, Zed, Pi, OMP (Oh My Pi) |
 
@@ -264,6 +264,39 @@ context-mode hook qwen-code posttooluse
 context-mode hook qwen-code sessionstart
 context-mode hook qwen-code precompact
 context-mode hook qwen-code userpromptsubmit
+```
+
+---
+
+### CodeBuddy
+
+**Status:** Supported (MCP + hooks — identical wire protocol to Claude Code)
+
+**Hook Paradigm:** JSON stdin/stdout (same as Claude Code)
+
+CodeBuddy uses the same hook wire protocol as Claude Code. Hooks are configured inside `~/.codebuddy/settings.json` under the `hooks` key.
+
+**Hook Names:** `PreToolUse`, `PostToolUse`, `SessionStart`, `PreCompact`, `UserPromptSubmit`
+
+**Blocking:** `permissionDecision: "deny"` or exit code 2
+**Arg Modification:** `updatedInput` in response
+**Output Modification:** `updatedMCPToolOutput` in response
+**Context Injection:** `additionalContext` in response
+
+**Configuration:**
+- Settings + hooks: `~/.codebuddy/settings.json`
+- MCP: `mcpServers` in settings.json
+- Sessions: `~/.codebuddy/context-mode/sessions/`
+
+**Detection:** MCP clientInfo (`CodeBuddy`), `CODEBUDDY_PROJECT_DIR` env var, or `~/.codebuddy/` config dir.
+
+**Hook Commands:**
+```
+context-mode hook codebuddy pretooluse
+context-mode hook codebuddy posttooluse
+context-mode hook codebuddy sessionstart
+context-mode hook codebuddy precompact
+context-mode hook codebuddy userpromptsubmit
 ```
 
 ---

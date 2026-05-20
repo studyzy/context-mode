@@ -121,6 +121,36 @@ export const formatters = {
       agent_message: additionalContext,
     }),
   },
+
+  "codebuddy": {
+    deny: (reason) => ({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: reason,
+      },
+    }),
+    ask: () => ({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+      },
+    }),
+    modify: (updatedInput) => ({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "allow",
+        permissionDecisionReason: "Routed to context-mode sandbox",
+        updatedInput,
+      },
+    }),
+    context: (additionalContext) => ({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        additionalContext,
+      },
+    }),
+  },
 };
 
 /**

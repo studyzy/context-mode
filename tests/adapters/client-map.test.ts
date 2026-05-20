@@ -66,6 +66,10 @@ describe("CLIENT_NAME_TO_PLATFORM", () => {
     expect(CLIENT_NAME_TO_PLATFORM["Pi Coding Agent"]).toBe("pi");
   });
 
+  it('maps "CodeBuddy" to "codebuddy"', () => {
+    expect(CLIENT_NAME_TO_PLATFORM["CodeBuddy"]).toBe("codebuddy");
+  });
+
   it("returns undefined for unknown client name", () => {
     expect(CLIENT_NAME_TO_PLATFORM["some-unknown-client"]).toBeUndefined();
   });

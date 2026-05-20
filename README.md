@@ -39,7 +39,7 @@ Context Mode is an MCP server that solves all four sides of this problem:
 
 1. **Context Saving** — Sandbox tools keep raw data out of the context window. 315 KB becomes 5.4 KB. 98% reduction.
 2. **Session Continuity** — Every file edit, git operation, task, error, and user decision is tracked in SQLite. When the conversation compacts, context-mode doesn't dump this data back into context — it indexes events into FTS5 and retrieves only what's relevant via BM25 search. The model picks up exactly where you left off. If you don't `--continue`, previous session data is deleted immediately — a fresh session means a clean slate.
-3. **Think in Code** — The LLM should program the analysis, not compute it. Instead of reading 50 files into context to count functions, the agent writes a script that does the counting and `console.log()`s only the result. One script replaces ten tool calls and saves 100x context. This is a mandatory paradigm across all 15 platforms: stop treating the LLM as a data processor, treat it as a code generator.
+3. **Think in Code** — The LLM should program the analysis, not compute it. Instead of reading 50 files into context to count functions, the agent writes a script that does the counting and `console.log()`s only the result. One script replaces ten tool calls and saves 100x context. This is a mandatory paradigm across all 16 platforms: stop treating the LLM as a data processor, treat it as a code generator.
 
    ```js
    // Before: 47 × Read() = 700 KB.  After: 1 × ctx_execute() = 3.6 KB.
@@ -685,6 +685,60 @@ The Codex plugin manifest provides MCP via `.codex-plugin/mcp.json`, skills via
 </details>
 
 <details>
+<summary><strong>CodeBuddy</strong> — MCP + hooks (identical wire protocol to Claude Code)</summary>
+
+**Prerequisites:** Node.js >= 22.5 (or Bun), CodeBuddy installed.
+
+1. Install context-mode:
+
+   ```bash
+   npm install -g context-mode
+   ```
+
+2. Add context-mode as an MCP server. Add to `~/.codebuddy/settings.json`:
+
+   ```json
+   {
+     "mcpServers": {
+       "context-mode": {
+         "command": "context-mode",
+         "args": []
+       }
+     }
+   }
+   ```
+
+3. Add hooks for routing enforcement and session tracking. Add to `~/.codebuddy/settings.json`:
+
+   ```json
+   {
+     "hooks": {
+       "PreToolUse": [{ "matcher": "Bash|WebFetch|Read|Grep|Agent|mcp__context-mode__ctx_execute|mcp__context-mode__ctx_execute_file|mcp__context-mode__ctx_batch_execute|mcp__(?!.*context-mode)", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy pretooluse" }] }],
+       "PostToolUse": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy posttooluse" }] }],
+       "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy sessionstart" }] }],
+       "PreCompact": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy precompact" }] }],
+       "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy userpromptsubmit" }] }]
+     }
+   }
+   ```
+
+4. Copy routing instructions (recommended for full routing awareness):
+
+   ```bash
+   cp node_modules/context-mode/configs/codebuddy/CODEBUDDY.md ./CODEBUDDY.md
+   ```
+
+   For global use: `cp node_modules/context-mode/configs/codebuddy/CODEBUDDY.md ~/.codebuddy/CODEBUDDY.md`
+
+5. Restart CodeBuddy.
+
+**Verify:** Start a session and type `ctx stats`. Context-mode tools should appear and respond.
+
+**Note:** CodeBuddy uses the same hook wire protocol as Claude Code (JSON stdin/stdout, same event names). Auto-detected via MCP clientInfo (`CodeBuddy`) or `CODEBUDDY_PROJECT_DIR` env var.
+
+</details>
+
+<details>
 <summary><strong>Antigravity</strong> — MCP-only, no hooks</summary>
 
 **Prerequisites:** Node.js >= 22.5 (or Bun), Antigravity installed.
@@ -1192,17 +1246,17 @@ Tool call output can be collapsed/expanded with the default Pi's default keybind
 
 ## Platform Compatibility
 
-| Feature | Claude Code | Qwen Code | Gemini CLI | VS Code Copilot | JetBrains Copilot | Cursor | OpenCode | KiloCode | OpenClaw | Codex CLI | Antigravity | Kiro | Zed | Pi | OMP |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| MCP Server / Native Tools | Yes | Yes | Yes | Yes | Yes | Yes | Native plugin | Native plugin | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| PreToolUse Hook | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
-| PostToolUse Hook | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
-| SessionStart Hook | Yes | Yes | Yes | Yes | Yes | -- | ✓ (via experimental.chat.system.transform) | ✓ (via experimental.chat.system.transform) | Plugin | Yes | -- | -- | -- | Yes (extension) | Plugin |
-| PreCompact Hook | Yes | Yes | Yes | Yes | Yes | -- | Plugin | Plugin | Plugin | Yes | -- | -- | -- | Yes (extension) | Plugin |
-| Can Modify Args | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | -- | -- | -- | -- | Yes (extension) | -- |
-| Can Block Tools | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
-| Utility Commands (ctx) | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes (/ctx-stats, /ctx-doctor) | Yes |
-| Slash Commands | Yes | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
+| Feature | Claude Code | Qwen Code | CodeBuddy | Gemini CLI | VS Code Copilot | JetBrains Copilot | Cursor | OpenCode | KiloCode | OpenClaw | Codex CLI | Antigravity | Kiro | Zed | Pi | OMP |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| MCP Server / Native Tools | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Native plugin | Native plugin | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| PreToolUse Hook | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
+| PostToolUse Hook | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
+| SessionStart Hook | Yes | Yes | Yes | Yes | Yes | Yes | -- | ✓ (via experimental.chat.system.transform) | ✓ (via experimental.chat.system.transform) | Plugin | Yes | -- | -- | -- | Yes (extension) | Plugin |
+| PreCompact Hook | Yes | Yes | Yes | Yes | Yes | Yes | -- | Plugin | Plugin | Plugin | Yes | -- | -- | -- | Yes (extension) | Plugin |
+| Can Modify Args | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | -- | -- | -- | -- | Yes (extension) | -- |
+| Can Block Tools | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Plugin | Plugin | Plugin | Yes | -- | Yes | -- | Yes (extension) | Plugin |
+| Utility Commands (ctx) | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes (/ctx-stats, /ctx-doctor) | Yes |
+| Slash Commands | Yes | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 | Plugin Marketplace | Yes | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 
 > **OpenCode** uses a TypeScript plugin paradigm — hooks run as in-process functions via `tool.execute.before`, `tool.execute.after`, `experimental.session.compacting`, `experimental.chat.system.transform`, and `chat.message`, providing full routing enforcement, session continuity, and user-prompt capture. The `experimental.chat.system.transform` hook acts as a SessionStart surrogate to inject the routing block and restore prior sessions. The `chat.message` hook captures user prompts and decisions (UserPromptSubmit equivalent).

@@ -416,6 +416,7 @@ export type PlatformId =
   | "omp"
   | "zed"
   | "qwen-code"
+  | "codebuddy"
   | "unknown";
 
 /** Detection signal used to identify which platform is running. */

@@ -1,0 +1,18 @@
+{
+  "name": "context-mode",
+  "version": "1.0.146",
+  "description": "MCP server that saves 98% of your context window — sandboxed code execution, FTS5 search, hard-block curl/wget, session continuity across compaction.",
+  "author": {
+    "name": "Mert Koseoğlu",
+    "url": "https://github.com/mksglu"
+  },
+  "mcpServers": "./.codebuddy-plugin/mcp.json",
+  "hooks": "./.codebuddy-plugin/hooks.json",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "context-mode",
+    "shortDescription": "98% context window savings via FTS5 + sandboxed execution",
+    "developerName": "Mert Koseoğlu",
+    "category": "Productivity"
+  }
+}

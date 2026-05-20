@@ -217,6 +217,12 @@ const _PLATFORM_ENV_VARS_RAW: ReadonlyArray<readonly [PlatformId, readonly Platf
   ["qwen-code", [
     { name: "QWEN_PROJECT_DIR", role: "workspace" },
   ]],
+  // codebuddy — CODEBUDDY_PROJECT_DIR is the workspace var,
+  // CODEBUDDY_SESSION_ID is the identification marker.
+  ["codebuddy", [
+    { name: "CODEBUDDY_PROJECT_DIR",  role: "workspace" },
+    { name: "CODEBUDDY_SESSION_ID",   role: "identification" },
+  ]],
   // omp (can1357/oh-my-pi). PI_CODING_AGENT_DIR is the upstream
   // agent-dir override per `packages/utils/src/dirs.ts:193`. Listed
   // BEFORE pi so OMP is not misclassified as Pi when both are installed.
@@ -345,6 +351,7 @@ export function getSessionDirSegments(platform: string): string[] | null {
     case "pi":               return [".pi"];
     case "omp":              return [".omp"];
     case "qwen-code":        return [".qwen"];
+    case "codebuddy":        return [".codebuddy"];
     case "kilo":             return [".config", "kilo"];
     case "opencode":         return [".config", "opencode"];
     case "zed":              return [".config", "zed"];
@@ -385,7 +392,7 @@ export function detectPlatform(clientInfo?: { name: string; version?: string }):
   if (platformOverride) {
     const validPlatforms: PlatformId[] = [
       "claude-code", "gemini-cli", "kilo", "opencode", "codex",
-      "vscode-copilot", "jetbrains-copilot", "cursor", "antigravity", "kiro", "pi", "omp", "zed", "qwen-code",
+      "vscode-copilot", "jetbrains-copilot", "cursor", "antigravity", "kiro", "pi", "omp", "zed", "qwen-code", "codebuddy",
     ];
     if (validPlatforms.includes(platformOverride as PlatformId)) {
       return {
@@ -492,6 +499,14 @@ export function detectPlatform(clientInfo?: { name: string; version?: string }):
       platform: "qwen-code",
       confidence: "medium",
       reason: "~/.qwen/ directory exists",
+    };
+  }
+
+  if (existsSync(resolve(home, ".codebuddy"))) {
+    return {
+      platform: "codebuddy",
+      confidence: "medium",
+      reason: "~/.codebuddy/ directory exists",
     };
   }
 
@@ -620,6 +635,11 @@ export async function getAdapter(platform?: PlatformId): Promise<HookAdapter> {
     case "qwen-code": {
       const { QwenCodeAdapter } = await import("./qwen-code/index.js");
       return new QwenCodeAdapter();
+    }
+
+    case "codebuddy": {
+      const { CodeBuddyAdapter } = await import("./codebuddy/index.js");
+      return new CodeBuddyAdapter();
     }
 
     case "omp": {

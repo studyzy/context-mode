@@ -15,6 +15,7 @@ import { CursorAdapter } from "../../src/adapters/cursor/index.js";
 import { AntigravityAdapter } from "../../src/adapters/antigravity/index.js";
 import { KiroAdapter } from "../../src/adapters/kiro/index.js";
 import { QwenCodeAdapter } from "../../src/adapters/qwen-code/index.js";
+import { CodeBuddyAdapter } from "../../src/adapters/codebuddy/index.js";
 import { JetBrainsCopilotAdapter } from "../../src/adapters/jetbrains-copilot/index.js";
 import { OMPAdapter } from "../../src/adapters/omp/index.js";
 import { PiAdapter } from "../../src/adapters/pi/index.js";
@@ -55,6 +56,8 @@ describe("detectPlatform", () => {
     delete process.env.VSCODE_PID;
     delete process.env.VSCODE_CWD;
     delete process.env.QWEN_PROJECT_DIR;
+    delete process.env.CODEBUDDY_PROJECT_DIR;
+    delete process.env.CODEBUDDY_SESSION_ID;
     delete process.env.PI_CODING_AGENT_DIR;
     // Issue #542 — Pi-runtime markers (PI_CONFIG_DIR, PI_SESSION_FILE,
     // PI_COMPILED) replace the stale PI_PROJECT_DIR detection signal.
@@ -458,12 +461,34 @@ describe("detectPlatform", () => {
     expect(signal.confidence).toBe("high");
   });
 
+  // ── CodeBuddy ──────────────────────────────────────────
+
+  it("detects codebuddy via CODEBUDDY_PROJECT_DIR env var", () => {
+    process.env.CODEBUDDY_PROJECT_DIR = "/some/project";
+    const signal = detectPlatform();
+    expect(signal.platform).toBe("codebuddy");
+    expect(signal.confidence).toBe("high");
+  });
+
+  it("detects codebuddy via CODEBUDDY_SESSION_ID env var", () => {
+    process.env.CODEBUDDY_SESSION_ID = "session-123";
+    const signal = detectPlatform();
+    expect(signal.platform).toBe("codebuddy");
+    expect(signal.confidence).toBe("high");
+  });
+
+  it("detects codebuddy via MCP clientInfo", () => {
+    const signal = detectPlatform({ name: "CodeBuddy", version: "1.0" });
+    expect(signal.platform).toBe("codebuddy");
+    expect(signal.confidence).toBe("high");
+  });
+
   // ── Fallback ───────────────────────────────────────────
 
   it("returns a valid platform as default when no env vars are set", () => {
     // No env vars set — result depends on which config dirs exist on this machine.
     const signal = detectPlatform();
-    expect(["claude-code", "gemini-cli", "codex", "cursor", "opencode", "kilo", "openclaw", "vscode-copilot", "antigravity", "kiro", "pi", "omp", "zed", "qwen-code", "jetbrains-copilot"]).toContain(signal.platform);
+    expect(["claude-code", "gemini-cli", "codex", "cursor", "opencode", "kilo", "openclaw", "vscode-copilot", "antigravity", "kiro", "pi", "omp", "zed", "qwen-code", "codebuddy", "jetbrains-copilot"]).toContain(signal.platform);
   });
 });
 
@@ -526,6 +551,11 @@ describe("getAdapter", () => {
   it("returns QwenCodeAdapter for qwen-code", async () => {
     const adapter = await getAdapter("qwen-code");
     expect(adapter).toBeInstanceOf(QwenCodeAdapter);
+  });
+
+  it("returns CodeBuddyAdapter for codebuddy", async () => {
+    const adapter = await getAdapter("codebuddy");
+    expect(adapter).toBeInstanceOf(CodeBuddyAdapter);
   });
 
   it("returns JetBrainsCopilotAdapter for jetbrains-copilot", async () => {

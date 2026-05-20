@@ -14,6 +14,7 @@ const targets = [
   ".claude-plugin/marketplace.json",
   ".cursor-plugin/plugin.json",
   ".codex-plugin/plugin.json",
+  ".codebuddy-plugin/plugin.json",
   // .codex-plugin/marketplace.json is intentionally absent — Codex CLI
   // reads marketplaces from .agents/plugins/marketplace.json (or
   // .claude-plugin/marketplace.json for Claude-compat). See
