@@ -112,6 +112,15 @@ interface ExecuteOptions {
   timeout?: number;
   /** Keep process running after timeout instead of killing it. */
   background?: boolean;
+  /**
+   * Issue #45 — per-call cwd override for the shell language. When set,
+   * the shell script runs in this directory instead of `#projectRoot`.
+   * Non-shell languages keep their tmpDir sandbox cwd regardless (the
+   * script file lives there). Used by Codex MCP handlers to pin shell
+   * commands to a resolved project root when the spawning host inherited
+   * a non-project cwd (e.g. $HOME).
+   */
+  cwd?: string;
 }
 
 interface ExecuteFileOptions extends ExecuteOptions {
@@ -170,7 +179,7 @@ export class PolyglotExecutor {
   }
 
   async execute(opts: ExecuteOptions): Promise<ExecResult> {
-    const { language, code, timeout, background = false } = opts;
+    const { language, code, timeout, background = false, cwd: cwdOverride } = opts;
     const tmpDir = mkdtempSync(join(OS_TMPDIR, ".ctx-mode-"));
 
     try {
@@ -185,7 +194,11 @@ export class PolyglotExecutor {
       // Shell commands run in the project directory so git, relative paths,
       // and other project-aware tools work naturally. Non-shell languages
       // run in the temp directory where their script file is written.
-      const cwd = language === "shell" ? this.#projectRoot : tmpDir;
+      // Issue #45 — `cwdOverride` lets per-call sites (Codex MCP handlers)
+      // pin shell cwd without mutating process-wide state.
+      const cwd = language === "shell"
+        ? (cwdOverride ?? this.#projectRoot)
+        : tmpDir;
       const result = await this.#spawn(cmd, cwd, tmpDir, timeout, background);
 
       // Skip tmpDir cleanup if process was backgrounded — it may still need files

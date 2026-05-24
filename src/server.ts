@@ -534,7 +534,7 @@ function getSessionDir(): string {
  * CONTEXT_MODE_PROJECT_DIR guarantees correct projectDir even for platforms
  * that don't set their own env var (Cursor, OpenClaw, Codex, Kiro, Zed).
  */
-function getProjectDir(): string {
+export function getProjectDir(): string {
   const override = projectDirOverride.getStore();
   if (override) return override.projectDir;
 
@@ -569,13 +569,21 @@ function getProjectDir(): string {
   // and the legacy literal cascade is preserved there for semver safety.
   let transcriptsRoot: string | undefined;
   let strictPlatform: PlatformId | undefined;
+  let codexHome: string | undefined;
   try {
     const detected = detectPlatform().platform;
     strictPlatform = detected;
     if (detected === "claude-code") {
       transcriptsRoot = join(homedir(), ".claude", "projects");
     }
-  } catch { /* detection failure — leave both undefined, resolver uses legacy cascade */ }
+    // Issue #45 — Codex publishes no workspace env var, so the resolver
+    // reads `meta.cwd` from the most-recently-modified session.jsonl under
+    // `${codexHome}/sessions/`. Wire codexHome at the call site so the
+    // resolver can be exercised under test without process-level mutation.
+    if (detected === "codex") {
+      codexHome = process.env.CODEX_HOME ?? join(homedir(), ".codex");
+    }
+  } catch { /* detection failure — leave undefined, resolver uses legacy cascade */ }
   return resolveProjectDir({
     env: process.env,
     cwd: process.cwd(),
@@ -583,6 +591,7 @@ function getProjectDir(): string {
     transcriptsRoot,
     transcriptMaxAgeMs: 5 * 60 * 1000,
     strictPlatform,
+    codexHome,
   });
 }
 

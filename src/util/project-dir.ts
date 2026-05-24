@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 
 import type { PlatformId } from "../adapters/types.js";
@@ -152,6 +153,89 @@ export function resolveProjectDirFromTranscript(opts: {
 }
 
 /**
+ * Issue #45 / c4529042182 — recover the project-cwd from a Codex CLI
+ * session log when the spawned MCP child inherits a non-project cwd
+ * (e.g. $HOME when Codex was launched from anywhere outside the project).
+ *
+ * Codex writes its session transcripts to
+ * `${CODEX_HOME ?? ~/.codex}/sessions/<uuid>.jsonl`. The first line is a
+ * `SessionMeta` JSON struct whose `meta.cwd` field carries the literal
+ * project directory the CLI was launched from (see refs/platforms/codex/
+ * codex-rs SessionMeta). Codex publishes NO workspace env var to its child
+ * MCP processes — so unlike Claude/Pi/Cursor, we have no env signal at all.
+ * The session log is the strongest available signal.
+ *
+ * Mirror of `resolveProjectDirFromTranscript` for Claude Code; differences:
+ *   • Sessions live flat in `${codexHome}/sessions/*.jsonl` (no per-project
+ *     encoded subdir like Claude's `~/.claude/projects/<encoded>/`).
+ *   • The cwd is on `meta.cwd` (nested), not top-level `cwd`.
+ *
+ * Returns `null` when:
+ *   • `codexHome` or its `sessions/` subdir does not exist.
+ *   • No `.jsonl` files exist or none has a parseable `meta.cwd` string.
+ *   • The newest log is older than `transcriptMaxAgeMs` (multi-window guard).
+ *   • The resolved `meta.cwd` points at a plugin install path (poisoned).
+ */
+export function resolveCodexSessionCwd(opts?: {
+  /** Defaults to `process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex")`. */
+  codexHome?: string;
+  /**
+   * Optional freshness guard — Codex appends to the active log while the
+   * session is running, so a stale log from days ago must not become a
+   * global project-dir signal.
+   */
+  transcriptMaxAgeMs?: number;
+  /** Test seam for transcriptMaxAgeMs. Defaults to Date.now(). */
+  now?: number;
+}): string | null {
+  const codexHome =
+    opts?.codexHome ?? process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
+  const sessionsDir = path.join(codexHome, "sessions");
+  if (!fs.existsSync(sessionsDir)) return null;
+
+  let bestPath: string | undefined;
+  let bestMtime = 0;
+  try {
+    for (const f of fs.readdirSync(sessionsDir)) {
+      if (!f.endsWith(".jsonl")) continue;
+      const fp = path.join(sessionsDir, f);
+      try {
+        const m = fs.statSync(fp).mtimeMs;
+        if (m > bestMtime) { bestMtime = m; bestPath = fp; }
+      } catch { /* skip */ }
+    }
+  } catch { return null; }
+
+  if (!bestPath) return null;
+  if (typeof opts?.transcriptMaxAgeMs === "number") {
+    const nowMs = opts.now ?? Date.now();
+    if (nowMs - bestMtime > opts.transcriptMaxAgeMs) return null;
+  }
+
+  // Read first ~8KB; the SessionMeta JSON is line 1 and small. Stream-cap
+  // mirrors `resolveProjectDirFromTranscript` for memory safety on long logs.
+  try {
+    const fd = fs.openSync(bestPath, "r");
+    try {
+      const buf = Buffer.alloc(8192);
+      const bytes = fs.readSync(fd, buf, 0, buf.length, 0);
+      const text = buf.subarray(0, bytes).toString("utf-8");
+      const firstLine = text.split("\n", 1)[0];
+      if (!firstLine || !firstLine.trim()) return null;
+      try {
+        const obj = JSON.parse(firstLine) as { meta?: { cwd?: unknown } };
+        const cwd = obj?.meta?.cwd;
+        if (typeof cwd !== "string" || cwd.length === 0) return null;
+        if (isPluginInstallPath(cwd)) return null;
+        return cwd;
+      } catch { return null; /* malformed first line */ }
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch { return null; /* file vanished mid-read */ }
+}
+
+/**
  * Pure project-dir resolver. Mirror of the env-var chain inside
  * `src/server.ts getProjectDir()`, but takes its inputs explicitly so the
  * resolver can be exercised under test without process-level mutation.
@@ -191,8 +275,17 @@ export function resolveProjectDir(opts: {
    * for `start.mjs` and any non-strict consumer).
    */
   strictPlatform?: PlatformId;
+  /**
+   * Issue #45 — override `${CODEX_HOME ?? ~/.codex}` for tests. When
+   * `strictPlatform === "codex"` and the env cascade yields nothing, the
+   * resolver reads `meta.cwd` from the newest session.jsonl under
+   * `${codexHome}/sessions/`.
+   */
+  codexHome?: string;
 }): string {
-  const { env, cwd, pwd, transcriptsRoot, transcriptMaxAgeMs, nowMs, strictPlatform } = opts;
+  const {
+    env, cwd, pwd, transcriptsRoot, transcriptMaxAgeMs, nowMs, strictPlatform, codexHome,
+  } = opts;
   // Build candidate list. Strict path: own workspace vars + universal escape
   // hatch — NO foreign workspace vars, in any order, can win. Non-strict
   // path: frozen legacy literal order for backwards compatibility.
@@ -210,6 +303,17 @@ export function resolveProjectDir(opts: {
       nowMs,
     });
     if (fromTranscript && !isPluginInstallPath(fromTranscript)) return fromTranscript;
+  }
+  // Issue #45 — Codex has no workspace env var, so when running under
+  // strictPlatform="codex" we fall back to the session-log heuristic
+  // between env and PWD. Non-codex platforms skip this branch entirely.
+  if (strictPlatform === "codex") {
+    const fromCodex = resolveCodexSessionCwd({
+      codexHome,
+      transcriptMaxAgeMs,
+      now: nowMs,
+    });
+    if (fromCodex) return fromCodex;
   }
   if (pwd && !isPluginInstallPath(pwd)) return pwd;
   return cwd;
