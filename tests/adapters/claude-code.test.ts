@@ -569,8 +569,8 @@ describe("ClaudeCodeAdapter", () => {
         }),
       );
 
-      // settings.json starts empty
-      writeFileSync(join(tempDir, "settings.json"), JSON.stringify({}));
+      // settings.json starts empty but marks context-mode as a plugin install
+      writeFileSync(join(tempDir, "settings.json"), JSON.stringify({ enabledPlugins: { "context-mode": {} } }));
 
       const changes = adapter.configureAllHooks(pluginRoot);
 
@@ -603,10 +603,11 @@ describe("ClaudeCodeAdapter", () => {
         }),
       );
 
-      // settings.json has stale entries
+      // settings.json has stale entries; enabledPlugins marks this as a plugin install
       writeFileSync(
         join(tempDir, "settings.json"),
         JSON.stringify({
+          enabledPlugins: { "context-mode": {} },
           hooks: {
             SessionStart: [{
               matcher: "",
@@ -674,6 +675,7 @@ describe("ClaudeCodeAdapter", () => {
       writeFileSync(
         join(tempDir, "settings.json"),
         JSON.stringify({
+          enabledPlugins: { "context-mode": {} },
           hooks: {
             SessionStart: [{
               matcher: "",
@@ -714,6 +716,7 @@ describe("ClaudeCodeAdapter", () => {
       writeFileSync(
         join(tempDir, "settings.json"),
         JSON.stringify({
+          enabledPlugins: { "context-mode": {} },
           hooks: {
             SessionStart: [{
               matcher: "",
@@ -748,6 +751,7 @@ describe("ClaudeCodeAdapter", () => {
       writeFileSync(
         join(tempDir, "settings.json"),
         JSON.stringify({
+          enabledPlugins: { "context-mode": {} },
           hooks: {
             PreToolUse: [{
               matcher: "Bash|WebFetch|Read|Grep|Agent",
