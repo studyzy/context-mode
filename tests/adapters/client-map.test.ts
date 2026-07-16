@@ -78,6 +78,10 @@ describe("CLIENT_NAME_TO_PLATFORM", () => {
     expect(CLIENT_NAME_TO_PLATFORM["Kimi Code"]).toBe("kimi");
   });
 
+  it('maps "CodeBuddy" to "codebuddy"', () => {
+    expect(CLIENT_NAME_TO_PLATFORM["CodeBuddy"]).toBe("codebuddy");
+  });
+
   it("returns undefined for unknown client name", () => {
     expect(CLIENT_NAME_TO_PLATFORM["some-unknown-client"]).toBeUndefined();
   });

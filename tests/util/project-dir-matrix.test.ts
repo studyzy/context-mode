@@ -48,6 +48,7 @@ const ALL_PLATFORMS: ReadonlyArray<PlatformId> = [
   "omp",
   "copilot-cli",
   "antigravity-cli",
+  "codebuddy",
 ];
 
 describe("resolveProjectDir matrix — MUST-3 invariant (issue #545)", () => {
@@ -140,7 +141,7 @@ describe("resolveProjectDir matrix — MUST-3 invariant (issue #545)", () => {
 // of registered platforms with host ≠ foreign, foreignIdentificationEnv(host)
 // must ban every foreign identification var AND must NOT ban any of host's
 // own identification vars. Algorithmically derived from PLATFORM_ENV_VARS so
-// adapter #16 inherits the guarantee for free.
+// adapter #17 inherits the guarantee for free.
 describe("foreignIdentificationEnv matrix — #561 invariant", () => {
   it("matrix: host bans every foreign identification var, preserves its own", () => {
     let assertions = 0;

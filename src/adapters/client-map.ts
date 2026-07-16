@@ -42,4 +42,5 @@ export const CLIENT_NAME_TO_PLATFORM: Record<string, PlatformId> = {
   "kimi-code": "kimi",
   "kimi": "kimi",
   "Kimi Code": "kimi",
+  "CodeBuddy": "codebuddy",
 };

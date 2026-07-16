@@ -33,6 +33,7 @@ const PLATFORM_ENV_VARS_MIRROR = [
   ["vscode-copilot",     ["VSCODE_PID", "VSCODE_CWD"]],
   ["jetbrains-copilot",  ["IDEA_INITIAL_DIRECTORY"]],
   ["qwen-code",          ["QWEN_PROJECT_DIR"]],
+  ["codebuddy",          ["CODEBUDDY_PROJECT_DIR", "CODEBUDDY_SESSION_ID"]],
   ["pi",                 ["PI_PROJECT_DIR"]],
   // openclaw — no auto-set process env vars; falls through to default
   // kiro — no auto-set process env vars; falls through to default

@@ -36,6 +36,7 @@ src/
     detect.ts      → Platform detection via env vars
     claude-code/   → Claude Code adapter (index.ts, hooks.ts, config.ts)
     qwen-code/     → Qwen Code adapter (extends Claude Code wire protocol)
+    codebuddy/     → CodeBuddy adapter (extends Claude Code wire protocol)
     gemini-cli/    → Gemini CLI adapter
     opencode/      → OpenCode adapter
     codex/         → Codex CLI adapter

@@ -825,6 +825,60 @@ Full documentation: [`docs/adapters/kimi-code.md`](docs/adapters/kimi-code.md)
 </details>
 
 <details>
+<summary><strong>CodeBuddy</strong> — MCP + hooks (identical wire protocol to Claude Code)</summary>
+
+**Prerequisites:** Node.js >= 22.5 (or Bun), CodeBuddy installed.
+
+1. Install context-mode:
+
+   ```bash
+   npm install -g context-mode
+   ```
+
+2. Add context-mode as an MCP server. Add to `~/.codebuddy/settings.json`:
+
+   ```json
+   {
+     "mcpServers": {
+       "context-mode": {
+         "command": "context-mode",
+         "args": []
+       }
+     }
+   }
+   ```
+
+3. Add hooks for routing enforcement and session tracking. Add to `~/.codebuddy/settings.json`:
+
+   ```json
+   {
+     "hooks": {
+       "PreToolUse": [{ "matcher": "Bash|WebFetch|Read|Grep|Agent|mcp__context-mode__ctx_execute|mcp__context-mode__ctx_execute_file|mcp__context-mode__ctx_batch_execute|mcp__(?!.*context-mode)", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy pretooluse" }] }],
+       "PostToolUse": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy posttooluse" }] }],
+       "SessionStart": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy sessionstart" }] }],
+       "PreCompact": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy precompact" }] }],
+       "UserPromptSubmit": [{ "matcher": "", "hooks": [{ "type": "command", "command": "context-mode hook codebuddy userpromptsubmit" }] }]
+     }
+   }
+   ```
+
+4. Copy routing instructions (recommended for full routing awareness):
+
+   ```bash
+   cp node_modules/context-mode/configs/codebuddy/CODEBUDDY.md ./CODEBUDDY.md
+   ```
+
+   For global use: `cp node_modules/context-mode/configs/codebuddy/CODEBUDDY.md ~/.codebuddy/CODEBUDDY.md`
+
+5. Restart CodeBuddy.
+
+**Verify:** Start a session and type `ctx stats`. Context-mode tools should appear and respond.
+
+**Note:** CodeBuddy uses the same hook wire protocol as Claude Code (JSON stdin/stdout, same event names). Auto-detected via MCP clientInfo (`CodeBuddy`) or `CODEBUDDY_PROJECT_DIR` env var.
+
+</details>
+
+<details>
 <summary><strong>Antigravity IDE</strong> — MCP-only, no hooks</summary>
 
 > This is the Antigravity **desktop IDE**. For the `agy` **command-line tool**, see **Antigravity CLI (`agy`)** below — it installs as a full plugin with hooks.
