@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/hooks/pretooluse.mjs\""
+            "command": "node \"${CODEBUDDY_PLUGIN_ROOT}/hooks/pretooluse.mjs\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/hooks/posttooluse.mjs\""
+            "command": "node \"${CODEBUDDY_PLUGIN_ROOT}/hooks/posttooluse.mjs\""
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/hooks/sessionstart.mjs\""
+            "command": "node \"${CODEBUDDY_PLUGIN_ROOT}/hooks/sessionstart.mjs\""
           }
         ]
       }
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/hooks/precompact.mjs\""
+            "command": "node \"${CODEBUDDY_PLUGIN_ROOT}/hooks/precompact.mjs\""
           }
         ]
       }
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${PLUGIN_ROOT}/hooks/userpromptsubmit.mjs\""
+            "command": "node \"${CODEBUDDY_PLUGIN_ROOT}/hooks/userpromptsubmit.mjs\""
           }
         ]
       }
