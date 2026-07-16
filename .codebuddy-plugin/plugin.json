@@ -7,7 +7,6 @@
     "url": "https://github.com/mksglu"
   },
   "mcpServers": "./.codebuddy-plugin/mcp.json",
-  "hooks": "./hooks/codebuddy-hooks.json",
   "skills": "./skills/",
   "interface": {
     "displayName": "context-mode",
